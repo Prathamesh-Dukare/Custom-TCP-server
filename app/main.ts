@@ -4,21 +4,24 @@ const server = net.createServer((socket) => {
   socket.on("data", (data) => {
     console.log("Client connected");
     console.log(data.toString());
+
     const firstLine = data.toString().split("\r\n")[0];
     const [method, path, version] = firstLine.split(" ");
-    if (path === "/") {
-      socket.write("HTTP/1.1 200 OK\r\n\r\n");
-      return;
-    }
 
-    socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+    if (path === "/") {
+      socket.write("HTTP/1.1 200 OK\r\n\r\n Hello World\r\n");
+    } else if (path.startsWith("/echo/")) {
+      const echoStr = path.split("/echo/")[1];
+      socket.write(
+        `HTTP/1.1 200 OK\r\nContent-type: text/plain\nContent-Length: ${echoStr.length}\n\r\n${echoStr}`
+      );
+    }
     socket.end();
   });
 
   socket.on("end", () => {
     console.log("Client disconnected");
   });
-  // socket.end();
 });
 
 // Uncomment this to pass the first stage
