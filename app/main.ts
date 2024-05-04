@@ -1,4 +1,6 @@
 import * as net from "node:net";
+import fs from "node:fs";
+import { join } from "node:path";
 
 const server = net.createServer((socket) => {
   socket.on("data", (data) => {
@@ -17,15 +19,32 @@ const server = net.createServer((socket) => {
       );
     } else if (path === "/user-agent") {
       const userAgent = rest
-        .find((line) => line.startsWith("User-Agent"))
-        .split(": ")[1]
+        ?.find((line) => line.startsWith("User-Agent"))
+        ?.split(": ")[1]
         .trim();
       console.log(userAgent, "userAgent");
+
       socket.write(
-        `HTTP/1.1 200 OK\r\nContent-Type: text/plain\nContent-Length: ${userAgent.length}\n\r\n${userAgent}`
+        `HTTP/1.1 200 OK\r\nContent-Type: text/plain\nContent-Length: ${
+          userAgent?.length ?? 0
+        }\n\r\n${userAgent}`
       );
+    } else if (path.startsWith("/files/")) {
+      const fileName = path.split("/files/")[1];
+      const dirName = process.argv.slice(2)[1];
+
+      try {
+        const fileContents = fs.readFileSync(join(dirName, fileName), "utf-8");
+        console.log(fileContents, "fileContents");
+        socket.write(
+          `HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\nContent-Length: ${fileContents.length}\n\r\n${fileContents}`
+        );
+      } catch (e) {
+        console.log(e);
+        socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+      }
     } else {
-      socket.write("HTTP/1.1 404 OK\r\n\r\n");
+      socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
     }
     socket.end();
   });
