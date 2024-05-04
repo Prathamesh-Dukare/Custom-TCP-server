@@ -22,7 +22,6 @@ const server = net.createServer((socket) => {
         ?.find((line) => line.startsWith("User-Agent"))
         ?.split(": ")[1]
         .trim();
-      console.log(userAgent, "userAgent");
 
       socket.write(
         `HTTP/1.1 200 OK\r\nContent-Type: text/plain\nContent-Length: ${
@@ -33,15 +32,28 @@ const server = net.createServer((socket) => {
       const fileName = path.split("/files/")[1];
       const dirName = process.argv.slice(2)[1];
 
-      try {
-        const fileContents = fs.readFileSync(join(dirName, fileName), "utf-8");
+      // * reading a file from server
+      if (method === "GET") {
+        try {
+          const fileContents = fs.readFileSync(
+            join(dirName, fileName),
+            "utf-8"
+          );
+          socket.write(
+            `HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\nContent-Length: ${fileContents.length}\n\r\n${fileContents}`
+          );
+        } catch (e) {
+          console.log(e);
+          socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+        }
+      }
+      // * wriring a file into server
+      else if (method === "POST") {
+        const fileContents = rest[rest.length - 1].trim();
         console.log(fileContents, "fileContents");
-        socket.write(
-          `HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\nContent-Length: ${fileContents.length}\n\r\n${fileContents}`
-        );
-      } catch (e) {
-        console.log(e);
-        socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
+
+        fs.writeFileSync(join(dirName, fileName), fileContents);
+        socket.write("HTTP/1.1 201 Created \r\n\r\n");
       }
     } else {
       socket.write("HTTP/1.1 404 Not Found\r\n\r\n");
