@@ -5,8 +5,8 @@ const server = net.createServer((socket) => {
     console.log("Client connected");
     console.log(data.toString());
 
-    const firstLine = data.toString().split("\r\n")[0];
-    const [method, path, version] = firstLine.split(" ");
+    const [fLine, ...rest] = data.toString().split("\r\n");
+    const [method, path, version] = fLine.split(" ");
 
     if (path === "/") {
       socket.write("HTTP/1.1 200 OK\r\n\r\n Hello World\r\n");
@@ -14,6 +14,15 @@ const server = net.createServer((socket) => {
       const echoStr = path.split("/echo/")[1];
       socket.write(
         `HTTP/1.1 200 OK\r\nContent-Type: text/plain\nContent-Length: ${echoStr.length}\n\r\n${echoStr}`
+      );
+    } else if (path === "/user-agent") {
+      const userAgent = rest
+        .find((line) => line.startsWith("User-Agent"))
+        .split(": ")[1]
+        .trim();
+      console.log(userAgent, "userAgent");
+      socket.write(
+        `HTTP/1.1 200 OK\r\nContent-Type: text/plain\nContent-Length: ${userAgent.length}\n\r\n${userAgent}`
       );
     } else {
       socket.write("HTTP/1.1 404 OK\r\n\r\n");
